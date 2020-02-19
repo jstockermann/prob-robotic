@@ -9,7 +9,8 @@ addpath "../tools/visualization"
 source "../tools/utilities/geometry_helpers_2d.m"
 
 #load your own dataset dataset, without landmarks (first entry remains empty)
-[_, poses, transitions, observations] = loadG2o("../datasets/dataset_point.g2o");
+#[_, poses, transitions, observations] = loadG2o("../datasets/dataset_point.g2o");
+[_, poses, transitions, observations] = loadG2o("../datasets/BearingOnlySLAM/slam2D_bearing_only_initial_guess.g2o");
 
 #set initial pose at the origin - we don't know the map and neither our location
 mu = [0;  #x coordinate
@@ -23,8 +24,12 @@ sigma = eye(3);
 #bookkeeping: to and from mapping between robot pose (x,y, theta) and landmark indices (i)
 #all mappings are initialized with invalid value -1 (meaning that the index is not mapped)
 #since we do not know how many landmarks we will observe, we allocate a large enough buffer
-id_to_state_map = ones(10000, 1)*-1;
-state_to_id_map = ones(10000, 1)*-1;
+id_to_state_map = ones(1000, 1)*-2;
+state_to_id_map = ones(1000, 1)*-1;
+
+#observation buffer: we need to store the first observation of a landmark to do the 
+#triangulation
+observation_buffer = zeros(1000,3);
 
 #------------------------------------------ VISUALIZATION ONLY ------------------------------------------
 #initialize GUI with initial situation
@@ -49,7 +54,8 @@ for t = 1:length(transitions)
   [mu, sigma, id_to_state_map, state_to_id_map] = correction(mu, sigma, observations_t, id_to_state_map, state_to_id_map);
 
   #ADD new landmarks to the state
-  [mu, sigma, id_to_state_map, state_to_id_map] = addNewLandmarks(mu, sigma, observations_t, id_to_state_map, state_to_id_map);
+  [mu, sigma, id_to_state_map, state_to_id_map, observation_buffer] = ...
+  addNewLandmarks(mu, sigma, observations_t, id_to_state_map, state_to_id_map, observation_buffer);
 
 #------------------------------------------ VISUALIZATION ONLY ------------------------------------------
   #display current state - transform data

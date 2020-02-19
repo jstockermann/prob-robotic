@@ -45,7 +45,7 @@ function [mu, sigma, id_to_state_map, state_to_id_map] = correction(mu, sigma, o
   # of old landmarks we have
   number_of_known_landmarks = 0;
 
-  # Here two cases arise, the current landmark has been already seen, i.e. REOBSERVED landmark,
+  # Here two cases arise, the current landmark is already in state, i.e. REOBSERVED landmark,
   # or the current landmark is completely new, i.e. NEW landmark.
   #
   # for simplicity we can divide the problem: first analyze only the reobserved landmark
@@ -63,8 +63,8 @@ function [mu, sigma, id_to_state_map, state_to_id_map] = correction(mu, sigma, o
     #fetch the position in the state vector corresponding to the actual measurement
     n = id_to_state_map(measurement.id);
 
-    #IF current landmark is a REOBSERVED LANDMARK
-    if(n != -1)
+    #IF current landmark is a already in state -> update
+    if(n > -1)
 
       #compute the index (vector coordinate) in the state vector corresponding to the pose of the landmark;	
       id_state = 4+2*(n-1);

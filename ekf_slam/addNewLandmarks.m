@@ -18,7 +18,8 @@
 #  [mu, sigma]: the updated mean and covariance with new landmarks
 #  [id_to_state_map, state_to_id_map]: the updated mapping vector between landmark position in mu vector and its id
 
-function [mu, sigma, id_to_state_map, state_to_id_map] = addNewLandmarks(mu, sigma, measurements, id_to_state_map, state_to_id_map)
+function [mu, sigma, id_to_state_map, state_to_id_map, observation_buffer] = ...
+addNewLandmarks(mu, sigma, measurements, id_to_state_map, state_to_id_map, observation_buffer)
 
   #robot
   mu_t     = mu(1:2,:); #translational part of the robot pose
@@ -41,6 +42,16 @@ function [mu, sigma, id_to_state_map, state_to_id_map] = addNewLandmarks(mu, sig
     state_pos_of_landmark = id_to_state_map(measurement.id);
 
     #IF current landmark is a NEW landmark
+    if(state_pos_of_landmark == -2) 
+      #save measurement in buffer
+      observation_buffer(measurement.id,1:2) = mu_t;
+      observation_buffer(measurement.id,3) = mu_theta+measurement.bearing;
+      
+      id_to_state_map(measurement.id) = -1;
+    
+    endif
+    
+    #IF current landmark is a already observed once
     if(state_pos_of_landmark == -1) 
 
       #adjust direct and reverse id mappings
@@ -48,9 +59,12 @@ function [mu, sigma, id_to_state_map, state_to_id_map] = addNewLandmarks(mu, sig
       id_to_state_map(measurement.id) = n;
       state_to_id_map(n)              = measurement.id;
       
-      #compute landmark position in the world
-      landmark_position_in_robot = [measurement.x_pose;measurement.y_pose];
-      landmark_position_in_world = mu_t + R*landmark_position_in_robot;
+      #compute landmark position in the world 
+      mu_old = observation_buffer(measurement.id,1:2);
+      bearing_old = observation_buffer(measurement.id,3);
+      
+      landmark_position_in_world = triangulate(mu_t, mu_old, mu_theta+measurement.bearing, bearing_old);
+      disp("Triangulation succeded")
 
       #retrieve from the index the position of the landmark block in the state
       id_state = 4+2*(n-1);
@@ -73,7 +87,7 @@ function [mu, sigma, id_to_state_map, state_to_id_map] = addNewLandmarks(mu, sig
       #set the covariance block
       sigma(id_state:id_state+1, id_state:id_state+1) = sigma_landmark;
 
-      printf("observed new landmark with identifier: %i \n", measurement.id);
+      printf("observed new landmark with identifier: %i at Pos (%f/%f) \n", measurement.id, landmark_position_in_world(1), landmark_position_in_world(2));
       fflush(stdout);
     endif
   endfor
