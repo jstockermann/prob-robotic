@@ -62,7 +62,7 @@ function [mu, sigma, id_to_state_map, state_to_id_map] = correction(mu, sigma, o
 
     #fetch the position in the state vector corresponding to the actual measurement
     n = id_to_state_map(measurement.id);
-
+    
     #IF current landmark is a already in state -> update
     if(n > -1)
 
@@ -74,31 +74,32 @@ function [mu, sigma, id_to_state_map, state_to_id_map] = correction(mu, sigma, o
       number_of_known_landmarks++;
 
       #add landmark measurement
-      z_t(end+1,:) = measurement.x_pose; 
-      z_t(end+1,:) = measurement.y_pose;
+      z_t(end+1,:) = measurement.bearing;
 
       #fetch the position of the landmark in the state (its x and y coordinate)
       landmark_mu=mu(id_state:id_state+1,:);
       
-      #where I predict i will see that landmark
-      delta_t            = landmark_mu-mu_t;
-      measure_prediction = Rt* delta_t;
-
+      #what angle i predict to see that landmark
+      delta_t=[landmark_mu(1)-mu_t(1) ; landmark_mu(2)-mu_t(2)];
+      bearing_measurement = Rt*delta_t;
+      bearing_prediction = atan2(bearing_measurement(2), bearing_measurement(1));
+      
       #add landmark measurement prediction
-      h_t(end+1,:) = measure_prediction(1);
-      h_t(end+1,:) = measure_prediction(2);
+      h_t(end+1,:) = bearing_prediction;
 
       #jacobian piece w.r.t. robot
-      C_m          = zeros(2, dimension_state);
-      C_m(1:2,1:2) = -Rt;
-      C_m(1:2,3)   = Rtp*delta_t;
-
+      C_m          = zeros(1, dimension_state);
+      faktor = 1/(delta_t(1)^2+delta_t(2)^2);
+      C_m(1,1) = delta_t(2)*faktor;
+      C_m(1,2) = -delta_t(1)*faktor;
+      C_m(1,3) = -1;
+      
       #jacobian piece w.r.t. landmark
-      C_m(:,id_state:id_state+1) = Rt;
+      C_m(1,id_state) = -delta_t(2)*faktor;
+      C_m(1,id_state+1) = delta_t(1)*faktor;
 
       #add jacobian piece to main jacobian
       C_t(end+1,:) = C_m(1,:);
-      C_t(end+1,:) = C_m(2,:);
     endif
   endfor
 
@@ -108,7 +109,7 @@ function [mu, sigma, id_to_state_map, state_to_id_map] = correction(mu, sigma, o
 
     #observation noise
     noise   = 0.01;
-    sigma_z = eye(2*number_of_known_landmarks)*noise;
+    sigma_z = eye(number_of_known_landmarks)*noise;
 
     #Kalman gain
     K = sigma * C_t'*(inv(C_t*sigma*C_t' + sigma_z));
@@ -118,7 +119,7 @@ function [mu, sigma, id_to_state_map, state_to_id_map] = correction(mu, sigma, o
     mu         = mu + K*innovation;
 
     #update sigma
-    sigma = (eye(dimension_state) - K*C_t)*sigma;		
+    sigma = (eye(dimension_state) - K*C_t)*sigma;
   endif
 end
 
