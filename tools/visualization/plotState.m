@@ -45,6 +45,6 @@ function out = plotState(varargin)
     drawRobot(robot_pose, covariance);
 
 	endif
-  axis([-11, 11, -11, 11]);
+  axis([-11, 20, -11, 20]);
 	drawnow;
 endfunction

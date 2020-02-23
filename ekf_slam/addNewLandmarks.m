@@ -53,18 +53,21 @@ addNewLandmarks(mu, sigma, measurements, id_to_state_map, state_to_id_map, obser
     
     #IF current landmark is a already observed once
     if(state_pos_of_landmark == -1) 
-
-      #adjust direct and reverse id mappings
-      n++;
-      id_to_state_map(measurement.id) = n;
-      state_to_id_map(n)              = measurement.id;
       
       #compute landmark position in the world 
       mu_old = observation_buffer(measurement.id,1:2);
       bearing_old = observation_buffer(measurement.id,3);
       
-      landmark_position_in_world = triangulate(mu_t, mu_old, mu_theta+measurement.bearing, bearing_old);
-      disp("Triangulation succeded")
+      [landmark_position_in_world, valid] = triangulate(mu_t, mu_old, mu_theta+measurement.bearing, bearing_old);
+      if(valid == false)
+        disp("LM skipped")
+        continue
+      endif
+      
+      #adjust direct and reverse id mappings
+      n++;
+      id_to_state_map(measurement.id) = n;
+      state_to_id_map(n)              = measurement.id;
 
       #retrieve from the index the position of the landmark block in the state
       id_state = 4+2*(n-1);

@@ -9,8 +9,8 @@ addpath "../tools/visualization"
 source "../tools/utilities/geometry_helpers_2d.m"
 
 #load your own dataset dataset, without landmarks (first entry remains empty)
-#[_, poses, transitions, observations] = loadG2o("../datasets/dataset_point.g2o");
 [_, poses, transitions, observations] = loadG2o("../datasets/BearingOnlySLAM/slam2D_bearing_only_initial_guess.g2o");
+#[land, poses, transitions, observations] = loadG2o("../datasets/BearingOnlySLAM/slam2D_bearing_only_ground_truth.g2o");
 
 #set initial pose at the origin - we don't know the map and neither our location
 mu = [0;  #x coordinate
