@@ -14,8 +14,8 @@ function [lm_pos, valid] = triangulate(mu1, mu2, theta1, theta2)
   dist = norm(mu1-mu2);
   if(angle < pi/10 || dist < 1)
     valid=false;
-    lm_pos=[0;0];
-    return
+  else
+    valid=true;
   endif
   
   #solve mu1+k*n1 = mu2+l*n2
@@ -24,5 +24,4 @@ function [lm_pos, valid] = triangulate(mu1, mu2, theta1, theta2)
   res = n\mu;
   
   lm_pos = res(1)*n1 + mu1;
-  valid = true;
   
