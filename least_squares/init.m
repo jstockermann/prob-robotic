@@ -1,4 +1,4 @@
-function initial_guess = init(poses, observations)
+function [initial_guess, id_to_guess, guess_to_id]  = init(poses, observations)
 
   #set initial pose at the origin - we don't know the map and neither our location
   #mu_t = [0;  #x coordinate
@@ -46,7 +46,10 @@ function initial_guess = init(poses, observations)
   endfor
 
   #parse all_obs -> triangulate between all possible measurements
-  initial_guess = cell(1);
+  initial_guess = [];
+  id_to_guess = ones(1000,1)*-1;
+  guess_to_id = ones(1000,1)*-1;
+  
   for i=1:rows(all_obs)
     all_tri_points=[];
     not_valid=[];
@@ -60,7 +63,6 @@ function initial_guess = init(poses, observations)
           if(all_obs(i,l)==-10)
             continue
           else
-            # printf("k: %i l: %i /n" , k, l)
             [lm_pos, valid] = triangulate([poses(k+1).x; poses(k+1).y], [poses(l+1).x; poses(l+1).y],...
                poses(k+1).theta + all_obs(i,k), poses(k+1).theta + all_obs(i,l));
             if(valid)
@@ -78,9 +80,16 @@ function initial_guess = init(poses, observations)
     #printf("%i valid and %i not-valid triangulations for landmark %i; %i measurements \n" ,...
      #  rows(all_tri_points), rows(not_valid), obs_to_id_map(i), total_measurements)
     if(rows(all_tri_points)>0)
-      initial_guess(obs_to_id_map(i)) = mean(all_tri_points,1);
-    elseif(rows(not_valid)>0)
-      initial_guess(obs_to_id_map(i)) = mean(not_valid,1);
+      initial_guess(end+1) = mean(all_tri_points,1)';
+      
+      guess_to_id(rows(initial_guess)) = obs_to_id_map(i);
+      id_to_guess(obs_to_id_map(i)) = rows(initial_guess);
+      
+#    elseif(rows(not_valid)>0)
+#      initial_guess(end+1) = mean(not_valid,1)';
+#      
+#      guess_to_id(rows(initial_guess)) = obs_to_id_map(i);
+#      id_to_guess(obs_to_id_map(i)) = rows(initial_guess);
     endif  
     
     #inital_guess stays empty if only one measurement of landmark exists
