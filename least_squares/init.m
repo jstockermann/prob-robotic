@@ -80,7 +80,7 @@ function [initial_guess, id_to_guess, guess_to_id]  = init(poses, observations)
     #printf("%i valid and %i not-valid triangulations for landmark %i; %i measurements \n" ,...
      #  rows(all_tri_points), rows(not_valid), obs_to_id_map(i), total_measurements)
     if(rows(all_tri_points)>0)
-      initial_guess(end+1) = mean(all_tri_points,1)';
+      initial_guess(end+1,:) = mean(all_tri_points,1)';
       
       guess_to_id(rows(initial_guess)) = obs_to_id_map(i);
       id_to_guess(obs_to_id_map(i)) = rows(initial_guess);

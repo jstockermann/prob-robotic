@@ -8,39 +8,86 @@ addpath "../tools/g2o_wrapper"
 addpath "../tools/visualization"
 addpath "../ekf_slam"
 source "../tools/utilities/geometry_helpers_2d.m"
+source "./do_ls.m"
 
-[_, poses, transitions, observations] = loadG2o("../datasets/BearingOnlySLAM/slam2D_bearing_only_initial_guess.g2o");
+#[_, poses, transitions, observations] = loadG2o("../datasets/BearingOnlySLAM/slam2D_bearing_only_initial_guess.g2o");
+#[lm_real, poses_real, transitions, observations] = loadG2o("../datasets/BearingOnlySLAM/slam2D_bearing_only_ground_truth.g2o");
+#transitions and observations seem to be equal, poses differ
 
 #initalization
 
-[initial_guess, id_to_guess, guess_to_id] = init(poses, observations);
+#[x_lm, id_to_guess, guess_to_id] = init(poses, observations);
+[x_lm, id_to_guess, guess_to_id] = init(poses_real, observations);
+number_of_lm = rows(x_lm);
 
+#draw true landmarks
+if(false)
+  figure(1)
+  drawLandmarks(lm_real,'g', 'fill')
+  lm_guess = landmark(guess_to_id(1), x_lm(1,:));
+  for u = 2:rows(x_lm);
+    lm_guess(end+1) = landmark(guess_to_id(u), x_lm(u,:));
+  endfor
+  drawLandmarks(lm_guess,'r', 'fill')
+
+  #draw true trajectory
+  figure(2)
+  for u = 1:length(poses_real)-1
+    #draw line from begin to end
+    x_begin = poses_real(u).x;
+    y_begin = poses_real(u).y;
+    x_end   = poses_real(u+1).x;
+    y_end   = poses_real(u+1).y;
+    plot([x_begin x_end], [y_begin y_end], "g", "linewidth", 2);
+    hold on;
+    
+    x_begin = poses(u).x;
+    y_begin = poses(u).y;
+    x_end   = poses(u+1).x;
+    y_end   = poses(u+1).y;
+    plot([x_begin x_end], [y_begin y_end], "r", "linewidth", 2);
+    hold on;
+  endfor
+endif
 #----------------------
 # intialization works but least squares is just a draft
 #----------------------
 
 #construct initial state
-x_lm = initial_guess;
-x_pose = [];
+x_pose = v2t([poses(1).x; poses(1).y; poses(1).theta]);
 for i=2:length(poses)
-  x_pose[end+1]=[poses(i).x; poses(i).y; poses(i).theta];
+  x_pose(:,:,end+1)=v2t([poses(i).x; poses(i).y; poses(i).theta]);
 endfor
 
 #least squares loop
-chi = 2;
-while(chi>1)
-  #pose-LM
-  chi_lm=0; 
+num_iterations = 10;
+damping = 0.05;
+kernel_threshold = 3.0;
+[XR, XL, chi_stats, num_inliers]=do_ls(x_pose, x_lm', id_to_guess, guess_to_id,observations,length(poses), number_of_lm, num_iterations, damping, kernel_threshold);
+
+#draw solution
+figure(3)
+drawLandmarks(lm_real,'g', 'fill')
+lm_sol = landmark(guess_to_id(1), XL(:,1));
+for u = 2:rows(XL');
+  lm_sol(end+1) = landmark(guess_to_id(u), XL(:,u));
+endfor
+drawLandmarks(lm_guess, 'r', 'fill')
+drawLandmarks(lm_sol,'b', 'fill')
+
+#draw optimized trajectory
+figure(4)
+for u = 1:length(poses_real)-1
+  #draw line from begin to end
+  x_begin = poses_real(u).x;
+  y_begin = poses_real(u).y;
+  x_end   = poses_real(u+1).x;
+  y_end   = poses_real(u+1).y;
+  plot([x_begin x_end], [y_begin y_end], "g", "linewidth", 2);
+  hold on;
   
-  dim = length(x_lm)+length(x_pose);
-  H=zeros(dim,dim);  b=zeros(dim,1); %accumulators for H and b
-  for(i=1:length(observations))
-     observations_t = observations(i)
-     [e,J]=errorAndJacobian_LM(x_lm, x_pose, observations_t); %compute e and J 
-     H+=J'*J;            %assemble H and B
-     b+=J'*e;
-     chi_lm+=e'*e;          %update cumulative error
-  endfor
-  dx=­H\b;               %solve the linear system
-  x_new=x+dx;            %apply update
-  
+  pose1 = t2v (XR(:,:,u));
+  pose2 = t2v (XR(:,:,u+1));
+  plot([pose1(1) pose2(1)], [pose1(2) pose2(2)], "r", "linewidth", 2);
+  hold on;
+endfor
