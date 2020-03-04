@@ -63,7 +63,7 @@ endfor
 num_iterations = 10;
 damping = 0.05;
 kernel_threshold = 3.0;
-[XR, XL, chi_stats, num_inliers]=do_ls(x_pose, x_lm', id_to_guess, guess_to_id,observations,length(poses), number_of_lm, num_iterations, damping, kernel_threshold);
+[XR, XL, chi_stats, num_inliers]=do_ls(x_pose, x_lm', id_to_guess, guess_to_id,observations, transitions, length(poses), number_of_lm, num_iterations, damping, kernel_threshold);
 
 #draw solution
 figure(3)

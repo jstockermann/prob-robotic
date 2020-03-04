@@ -183,7 +183,7 @@ function [XR, XL, chi_stats, num_inliers]=do_ls(XR, XL, id_to_guess, guess_to_id
       Xr1=XR(:,:,p);
       Xr2=XR(:,:,p+1);
       trans = transitions(p).v; 
-      [e,Jr1,Jr2]=errorAndJacobianPosePose(Xr1,Xr2,trans)
+      [e,Jr1,Jr2]=errorAndJacobianPosePose(Xr1,Xr2,trans);
       chi=e'*e;
       if (chi>kernel_threshold)
         e*=sqrt(kernel_threshold/chi);
