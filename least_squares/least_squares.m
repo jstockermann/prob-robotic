@@ -10,14 +10,14 @@ addpath "../ekf_slam"
 source "../tools/utilities/geometry_helpers_2d.m"
 source "./do_ls.m"
 
-#[_, poses, transitions, observations] = loadG2o("../datasets/BearingOnlySLAM/slam2D_bearing_only_initial_guess.g2o");
-#[lm_real, poses_real, transitions, observations] = loadG2o("../datasets/BearingOnlySLAM/slam2D_bearing_only_ground_truth.g2o");
+[_, poses, transitions, observations] = loadG2o("../datasets/BearingOnlySLAM/slam2D_bearing_only_initial_guess.g2o");
+[lm_real, poses_real, transitions, observations] = loadG2o("../datasets/BearingOnlySLAM/slam2D_bearing_only_ground_truth.g2o");
 #transitions and observations seem to be equal, poses differ
 
 #initalization
 
-#[x_lm, id_to_guess, guess_to_id] = init(poses, observations);
-[x_lm, id_to_guess, guess_to_id] = init(poses_real, observations);
+[x_lm, id_to_guess, guess_to_id] = init(poses, observations);
+#[x_lm, id_to_guess, guess_to_id] = init(poses_real, observations);
 number_of_lm = rows(x_lm);
 
 #draw true landmarks
