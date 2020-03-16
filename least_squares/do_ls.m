@@ -63,42 +63,41 @@ function [e,Jr1,Jr2]=errorAndJacobianPosePose(Xr1,Xr2,trans)
 
 endfunction
 
-function [e,Jr1,Jr2]=errorAndJacobianPosePose_flatten(Xr1,Xr2,trans)
+
+function [e,Jr1,Jr2] = errorAndJacobianPosePose_flatten(Xr1,Xr2,trans)
   xr1 = t2v(Xr1);
   xr2 = t2v(Xr2);
-  
-  #xr2_pred = transition_model(xr1, trans);
-  c = cos(xr1(3));
-  s = sin(xr1(3));
-  xr2_pred=xr2;
-  ux = trans(1);
-  ut = trans(3);
-  xr2_pred(1) = xr1(1) + ux*c;
-  xr2_pred(2) = xr1(2) + ux*s;
-  xr2_pred(3) = xr1(3) + ut;
+
+  xr2_pred = transition_model(xr1, trans);
   Xr2_pred = v2t(xr2_pred);
-  
-  e = reshape(Xr2_pred(1:2,1:3),6,1) - reshape(Xr2(1:2,1:3),6,1);
-  
+
+  g = inv(Xr1)*Xr2_pred;
+  z = inv(Xr1)*Xr2;
+
+  e = reshape(g(1:2,1:3),6,1) - reshape(z(1:2,1:3),6,1);
+
   Jr1 = zeros(6,3);
   Jr2 = zeros(6,3);
-  
-  Jr1(1,3) = -sin(xr1(3) + ut);
-  Jr1(2,3) = cos(xr1(3) + ut);
-  Jr1(3,3) = -cos(xr1(3) + ut);
-  Jr1(4,3) = -sin(xr1(3) + ut);
-  Jr1(5,:) = [1, 0, -ux * sin(xr1(1))];
-  Jr1(6,:) = [0, 1, ux * cos(xr1(1))];
-  
-  Jr2(1,3) = sin(xr2(3));
-  Jr2(2,3) = -cos(xr2(3));
-  Jr2(3,3) = cos(xr2(3));
-  Jr2(4,3) = sin(xr2(3));
-  Jr2(5,:) = [-1, 0, 0];
-  Jr2(6,:) = [0, -1, 0];
-  
 
+  R1 = Xr1(1:2,1:2);
+  R2 = Xr2(1:2,1:2);
+  Rtheta = [0, -1; 
+          1, 0];
+  t1 = Xr1(1:2,3);
+  t2 = Xr2(1:2,3);
+
+  dtheta = [R1'*Rtheta*R2, R1'*Rtheta*t2];
+  dx = [zeros(2,2), R1*[1;0]];
+  dy = [zeros(2,2), R1*[0;1]];
+
+  Jr2(:,1) = reshape(dx, 6, 1);
+  Jr2(:,2) = reshape(dy, 6, 1);
+  Jr2(:,3) = reshape(dtheta, 6, 1);
+
+  Jr1 = -Jr2;
+  
 endfunction
+
 
 
 # implementation of the boxplus

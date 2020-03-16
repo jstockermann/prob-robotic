@@ -49,9 +49,7 @@ if(false)
     hold on;
   endfor
 endif
-#----------------------
-# intialization works but least squares is just a draft
-#----------------------
+
 
 #construct initial state
 x_pose = v2t([poses(1).x; poses(1).y; poses(1).theta]);
